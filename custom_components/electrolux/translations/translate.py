@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import time
 
 from deep_translator import GoogleTranslator
@@ -16,17 +17,40 @@ def load_en_data():
 
 
 def translate_text(text, dest_language):
-    """Translate text to destination language."""
+    """Translate text to destination language while preserving placeholders.
+
+    Placeholders like {variable} are extracted before translation and restored
+    after, ensuring they remain in their original form with English names.
+    """
     if not text or text.strip() == "":
         return text
 
+    # Extract all placeholders {variable} and store them
+    placeholders = re.findall(r"\{(\w+)\}", text)
+
+    # Replace placeholders with unique markers to avoid translation
+    working_text = text
+    placeholder_map = {}
+    for i, placeholder in enumerate(placeholders):
+        marker = f"___PLACEHOLDER_{i}___"
+        placeholder_map[marker] = "{" + placeholder + "}"
+        working_text = working_text.replace("{" + placeholder + "}", marker, 1)
+
     try:
         translator = GoogleTranslator(source="en", target=dest_language)
-        result = translator.translate(text)
+        result = translator.translate(working_text)
+
+        # Restore original placeholders
+        for marker, placeholder in placeholder_map.items():
+            result = result.replace(marker, placeholder)
+
         return result
     except Exception as e:
         print(f"Translation failed for '{text[:50]}...' to {dest_language}: {e}")
-        return text  # Return original text if translation fails
+        # Restore placeholders before returning original text
+        for marker, placeholder in placeholder_map.items():
+            text = text.replace("{" + placeholder.strip("{}") + "}", placeholder)
+        return text
 
 
 def translate_dict(data, dest_language):

@@ -24,3 +24,4 @@
 - **All other language files** — fixed placeholder mismatches to align with English template:
   - Czech, Danish, Dutch, Finnish, German, Hungarian, Luxembourg, Norwegian, Polish, Romanian, Russian, Slovak, Swedish — corrected placeholder names in exception messages to use English identifiers (`{state}`, `{program}`, `{value}`, `{mode}`, `{modes}`) instead of translated names
   - Italian — fixed `invalid_preset_mode` to use `{modes}` instead of duplicate `{mode}`
+- **`translate.py` script** — enhanced to preserve placeholder names during translation. All placeholders (e.g. `{state}`, `{program}`) are now extracted before translation and restored afterward, preventing future placeholder translation errors.
