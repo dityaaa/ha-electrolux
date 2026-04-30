@@ -6,6 +6,7 @@ from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.switch import SwitchDeviceClass
 from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime
 
+from ..const import BINARY_SENSOR
 from ..model import ElectroluxDevice
 
 CATALOG_CR: dict[str, ElectroluxDevice] = {
@@ -563,6 +564,35 @@ CATALOG_CR: dict[str, ElectroluxDevice] = {
         entity_registry_enabled_default=False,
         friendly_name="Main Board Software Version",
     ),
+    "ecoMode": ElectroluxDevice(
+        capability_info={
+            "access": "constant",
+            "default": 1,
+            "type": "enum",
+            "values": {"OFF": {}, "ON": {}},
+        },
+        device_class=None,
+        entity_platform=BINARY_SENSOR,
+        unit=None,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_icon="mdi:leaf",
+        friendly_name="Eco Mode",
+    ),
+    "autosense": ElectroluxDevice(
+        capability_info={
+            "access": "constant",
+            "default": 0,
+            "type": "enum",
+            "values": {"0": {}, "1": {}},
+        },
+        device_class=None,
+        entity_platform=BINARY_SENSOR,
+        unit=None,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_icon="mdi:autorenew",
+        entity_registry_enabled_default=False,
+        friendly_name="Autosense",
+    ),
     "applianceMode": ElectroluxDevice(
         capability_info={
             "access": "read",
@@ -594,9 +624,11 @@ CATALOG_CR: dict[str, ElectroluxDevice] = {
     ),
     "ui2LockMode": ElectroluxDevice(
         capability_info={
-            "access": "readwrite",
+            "access": "read",
+            "type": "boolean",
+            "values": {"OFF": {}, "ON": {}},
         },
-        device_class=SwitchDeviceClass.SWITCH,
+        device_class=BinarySensorDeviceClass.LOCK,
         unit=None,
         entity_category=None,
         entity_icon="mdi:lock-outline",

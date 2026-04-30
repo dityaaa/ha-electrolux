@@ -1094,6 +1094,39 @@ class TestGetEntityExtended:
         assert len(entities) >= 1
         assert isinstance(entities[0], ElectroluxFan)
 
+    def test_entity_platform_binary_sensor_override(self):
+        """Catalog entity_platform=BINARY_SENSOR → entity_type becomes BINARY_SENSOR."""
+        from homeassistant.const import Platform
+
+        from custom_components.electrolux.binary_sensor import ElectroluxBinarySensor
+        from custom_components.electrolux.model import ElectroluxDevice
+
+        app = _make_app_full()
+        app._catalog_cache = {
+            "ecoMode": ElectroluxDevice(
+                capability_info={
+                    "access": "constant",
+                    "type": "enum",
+                    "values": {"OFF": {}, "ON": {}},
+                    "default": 1,
+                },
+                entity_platform=Platform.BINARY_SENSOR,
+            )
+        }
+        app.data = self._with_cap(
+            "ecoMode",
+            {
+                "access": "constant",
+                "type": "enum",
+                "values": {"OFF": {}, "ON": {}},
+                "default": 1,
+            },
+        )
+        entities = app.get_entity("ecoMode")
+        assert isinstance(entities, list)
+        assert len(entities) >= 1
+        assert isinstance(entities[0], ElectroluxBinarySensor)
+
     def test_entity_value_named_sets_entity_name_to_command(self):
         """Line 503: entity_value_named=True → each button entity named after command."""
         from custom_components.electrolux.model import ElectroluxDevice

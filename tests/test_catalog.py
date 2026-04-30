@@ -164,6 +164,28 @@ class TestCatalogRefrigerator:
         assert "fridge/targetTemperatureC" in CATALOG_CR
         assert "freezer/targetTemperatureC" in CATALOG_CR
 
+    def test_refrigerator_has_common_cr_entities(self):
+        """Refrigerator catalog has useful common entities."""
+        from custom_components.electrolux.catalogs.catalog_cr import (
+            CATALOG_CR,
+        )
+
+        assert "ecoMode" in CATALOG_CR
+        assert "autosense" in CATALOG_CR
+
+    def test_refrigerator_has_external_child_lock_binary_sensor(self):
+        """CR catalog exposes the external child lock as a binary sensor."""
+        from homeassistant.components.binary_sensor import BinarySensorDeviceClass
+
+        from custom_components.electrolux.catalogs.catalog_cr import (
+            CATALOG_CR,
+        )
+
+        entry = CATALOG_CR["ui2LockMode"]
+        assert entry.device_class == BinarySensorDeviceClass.LOCK
+        assert entry.capability_info["access"] == "read"
+        assert entry.capability_info["type"] == "boolean"
+
 
 class TestCatalogPurifier:
     """Tests for catalog_ap.py."""

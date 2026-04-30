@@ -10,11 +10,11 @@ from homeassistant.const import (
     CONCENTRATION_PARTS_PER_MILLION,
     PERCENTAGE,
     EntityCategory,
-    Platform,
     UnitOfTemperature,
     UnitOfTime,
 )
 
+from ..const import FAN
 from ..model import ElectroluxDevice
 
 CATALOG_AP = {
@@ -168,7 +168,7 @@ CATALOG_AP = {
         entity_category=None,
         entity_icon="mdi:fan",
         friendly_name="Air Purifier",
-        entity_platform=Platform.FAN,
+        entity_platform=FAN,
     ),
     # Verbier (humidifier-purifier) controls
     "AQILight": ElectroluxDevice(

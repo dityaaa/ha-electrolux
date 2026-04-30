@@ -4,8 +4,9 @@ from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.number import NumberDeviceClass
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.switch import SwitchDeviceClass
-from homeassistant.const import EntityCategory, Platform, UnitOfTemperature, UnitOfTime
+from homeassistant.const import EntityCategory, UnitOfTemperature, UnitOfTime
 
+from ..const import BINARY_SENSOR
 from ..execute_command_states import OVEN_EXECUTE_STATES
 from ..model import ElectroluxDevice
 
@@ -132,7 +133,7 @@ CATALOG_OV: dict[str, ElectroluxDevice] = {
             "type": "enum",
             "values": {"SUPPORTED": {}, "NOT_SUPPORTED": {}},
         },
-        entity_platform=Platform.BINARY_SENSOR,
+        entity_platform=BINARY_SENSOR,
         entity_icon="mdi:thermometer-probe",
         friendly_name="Food Probe Support",
     ),
