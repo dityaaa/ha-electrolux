@@ -5,6 +5,7 @@
   <a href="https://raw.githubusercontent.com/TTLucian/ha-solar-ac-controller/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" /></a>
   <img src="https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge" />
   <a href="https://github.com/TTLucian/ha-electrolux/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/TTLucian/ha-electrolux/ci.yml?style=for-the-badge" /></a>
+  <a href="#status-update"><img src="https://shields.io" /></a>
 </p>
 
 <p align="center">
@@ -758,3 +759,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Issues**: [GitHub Issues](https://github.com/TTLucian/ha-electrolux/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/TTLucian/ha-electrolux/discussions)
 - **Documentation**: [Electrolux Developer Portal](https://developer.electrolux.one/)
+
+
+# 👨‍💻 Status update:
+   - The CI run is currently failing due to some missing tests. I don't have the time to properly work on the tests, I do not have access to Copilot subscription and premium requests anymore due to lack of project funds.
+   While I'm still working on this, the reduced access to these tools means development and debugging will be slower and more "manual" for the time being. I appreciate your patience as I work through the remaining blockers at this new pace.
