@@ -224,7 +224,7 @@ class ElectroluxButton(ElectroluxEntity, ButtonEntity):
             coordinator: ElectroluxCoordinator = self.coordinator  # type: ignore[assignment]
             await coordinator.handle_authentication_error(auth_ex)
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             # Re-raise any errors from execute_command_with_error_handling
             raise
         _LOGGER.debug("Electrolux send command result %s", result)
@@ -237,11 +237,6 @@ class ElectroluxButton(ElectroluxEntity, ButtonEntity):
             await self._perform_manual_sync()
         else:
             await self.send_command()
-        # Coordinator refresh is now handled automatically in execute_command_with_error_handling
-        # await self.coordinator.async_request_refresh()
-        # await self.hass.async_add_executor_job(self.send_command)
-        # if self.entity_attr == "ExecuteCommand":
-        #     await self.hass.async_add_executor_job(self.coordinator.api.setHacl, self.get_appliance.pnc_id, "0x0403", self.val_to_send, self.entity_source)
 
     async def _perform_manual_sync(self) -> None:
         """Perform manual sync operation for all appliances."""

@@ -288,19 +288,27 @@ class ElectroluxApiClient:
 
         try:
             _LOGGER.debug("_report_token_refresh_error: Finding config entries")
-            # Find the config entry
-            entries = self.hass.config_entries.async_entries(DOMAIN)
-            if entries:
-                entry = entries[0]
+            # Use the config entry associated with this API client
+            if self.config_entry:
+                entry = self.config_entry
                 issue_id = f"invalid_refresh_token_{entry.entry_id}"
                 _LOGGER.debug(
                     f"_report_token_refresh_error: Using entry {entry.entry_id} for issue ID {issue_id}"
                 )
             else:
-                issue_id = "invalid_refresh_token"
-                _LOGGER.debug(
-                    "_report_token_refresh_error: No entries found, using generic issue ID"
-                )
+                # Fallback to old behavior if no config entry is associated
+                entries = self.hass.config_entries.async_entries(DOMAIN)
+                if entries:
+                    entry = entries[0]
+                    issue_id = f"invalid_refresh_token_{entry.entry_id}"
+                    _LOGGER.debug(
+                        f"_report_token_refresh_error: Using entry {entry.entry_id} for issue ID {issue_id} (fallback)"
+                    )
+                else:
+                    issue_id = "invalid_refresh_token"
+                    _LOGGER.debug(
+                        "_report_token_refresh_error: No entries found, using generic issue ID"
+                    )
 
             _LOGGER.warning("Token refresh failed: %s. Creating HA issue.", message)
             _LOGGER.debug(

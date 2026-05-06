@@ -334,7 +334,7 @@ class ElectroluxCoordinator(DataUpdateCoordinator):
             # Data validation errors during background task — log and return
             _LOGGER.error(f"Data error during deferred update for {appliance_id}: {ex}")
             return
-        except Exception:
+        except Exception:  # noqa: BLE001
             # Catch-all for unexpected errors in background task
             _LOGGER.exception(
                 f"Unexpected error during deferred update for {appliance_id}"

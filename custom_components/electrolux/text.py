@@ -195,7 +195,7 @@ class ElectroluxText(ElectroluxEntity, TextEntity):
 
         _LOGGER.debug("Electrolux set text value %s", command)
         try:
-            result = await execute_command_with_error_handling(
+            await execute_command_with_error_handling(
                 client, self.pnc_id, command, self.entity_attr, _LOGGER, self.capability
             )
         except AuthenticationError as auth_ex:
@@ -203,9 +203,6 @@ class ElectroluxText(ElectroluxEntity, TextEntity):
             coordinator: ElectroluxCoordinator = self.coordinator  # type: ignore[assignment]
             await coordinator.handle_authentication_error(auth_ex)
             raise
-        except Exception:
+        except Exception:  # noqa: BLE001
             # Re-raise any errors from execute_command_with_error_handling
             raise
-        _LOGGER.debug("Electrolux set text value result %s", result)
-        # Coordinator refresh is now handled automatically in execute_command_with_error_handling
-        # await self.coordinator.async_request_refresh()

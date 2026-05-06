@@ -324,7 +324,7 @@ class Appliance:
                 ex,
                 reported_data,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             _LOGGER.exception(
                 "Unexpected error updating reported data for %s. Data: %s",
                 self.pnc_id,

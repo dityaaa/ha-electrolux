@@ -127,7 +127,7 @@ async def async_setup_entry(
                         _LOGGER.debug(
                             "Could not register suggested id for entity %s", entity
                         )
-            except Exception:
+            except Exception:  # noqa: BLE001
                 _LOGGER.debug(
                     "Entity registry unavailable, skipping suggested id registration"
                 )

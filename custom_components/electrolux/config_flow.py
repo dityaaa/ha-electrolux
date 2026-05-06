@@ -238,11 +238,11 @@ class ElectroluxStatusFlowHandler(ConfigFlow, domain=DOMAIN):  # type: ignore[ca
     async def async_step_reauth(self, entry: ConfigEntry) -> ConfigFlowResult:
         """Handle configuration by re-auth."""
         _LOGGER.warning(
-            f"[AUTH-DEBUG] Reauth flow initiated for entry {entry.entry_id} (title: {entry.title})"
+            f"Reauth flow initiated for entry {entry.entry_id} (title: {entry.title})"
         )
         # Store the entry for later use
         self._reauth_entry = entry
-        _LOGGER.info("[AUTH-DEBUG] Displaying reauth form to user")
+        _LOGGER.info("Displaying reauth form to user")
         return await self.async_step_reauth_validate()
 
     def _get_reauth_entry(self) -> ConfigEntry:
@@ -257,7 +257,7 @@ class ElectroluxStatusFlowHandler(ConfigFlow, domain=DOMAIN):  # type: ignore[ca
     ) -> ConfigFlowResult | None:
         """Validate user input for reauth."""
         _LOGGER.info(
-            "[AUTH-DEBUG] Validating reauth credentials (api_key: %s, access_token: %s, refresh_token: %s)",
+            "Validating reauth credentials (api_key: %s, access_token: %s, refresh_token: %s)",
             _mask_token(user_input.get("api_key")),
             _mask_token(user_input.get("access_token")),
             _mask_token(user_input.get("refresh_token")),
@@ -268,20 +268,18 @@ class ElectroluxStatusFlowHandler(ConfigFlow, domain=DOMAIN):  # type: ignore[ca
             user_input.get("refresh_token"),
         )
         if credential_data:
-            _LOGGER.info("[AUTH-DEBUG] Reauth credentials validated successfully")
+            _LOGGER.info("Reauth credentials validated successfully")
             # Dismiss the token refresh issue since re-authentication succeeded
             from homeassistant.helpers import issue_registry
 
             entry = self._get_reauth_entry()
             if entry is None:
-                _LOGGER.error(
-                    "[AUTH-DEBUG] CRITICAL: No reauth entry found during reauthentication"
-                )
+                _LOGGER.error("CRITICAL: No reauth entry found during reauthentication")
                 self._errors["base"] = "reauth_failed"
                 return None
 
             issue_id = f"invalid_refresh_token_{entry.entry_id}"
-            _LOGGER.info(f"[AUTH-DEBUG] Dismissing repair issue: {issue_id}")
+            _LOGGER.info(f"Dismissing repair issue: {issue_id}")
             issue_registry.async_delete_issue(self.hass, DOMAIN, issue_id)
 
             entry_data = dict(user_input)
@@ -290,21 +288,15 @@ class ElectroluxStatusFlowHandler(ConfigFlow, domain=DOMAIN):  # type: ignore[ca
             if token_expiry is not None:
                 time_remaining = cast(int, token_expiry) - time.time()
                 _LOGGER.info(
-                    f"[AUTH-DEBUG] Reauth: New token expires in {time_remaining/3600:.1f} hours (at timestamp {token_expiry})"
+                    f"New token expires in {time_remaining/3600:.1f} hours (at timestamp {token_expiry})"
                 )
             else:
-                _LOGGER.warning(
-                    "[AUTH-DEBUG] Could not extract token expiry from JWT during reauth"
-                )
+                _LOGGER.warning("Could not extract token expiry from JWT during reauth")
 
             # Update the existing entry with new tokens
-            _LOGGER.info(
-                f"[AUTH-DEBUG] Updating config entry {entry.entry_id} with new credentials"
-            )
+            _LOGGER.info(f"Updating config entry {entry.entry_id} with new credentials")
             return self.async_update_reload_and_abort(entry, data=entry_data)
-        _LOGGER.warning(
-            "[AUTH-DEBUG] Reauth credentials validation failed - invalid credentials"
-        )
+        _LOGGER.warning("Reauth credentials validation failed - invalid credentials")
         self._errors["base"] = "invalid_auth"
         return None
 
@@ -314,21 +306,19 @@ class ElectroluxStatusFlowHandler(ConfigFlow, domain=DOMAIN):  # type: ignore[ca
         """Handle reauth and validation."""
         self._errors = {}
         if user_input is not None:
-            _LOGGER.info("[AUTH-DEBUG] Reauth form submitted, validating credentials")
+            _LOGGER.info("Reauth form submitted, validating credentials")
             result = await self._validate_reauth_input(user_input)
             if result is not None:
-                _LOGGER.info("[AUTH-DEBUG] Reauth completed successfully")
+                _LOGGER.info("Reauth completed successfully")
                 return result
             # Invalid, show form with errors
-            _LOGGER.info(
-                "[AUTH-DEBUG] Reauth validation failed, showing form with errors"
-            )
+            _LOGGER.info("Reauth validation failed, showing form with errors")
 
         # For reauth, populate defaults with current config entry values
         entry = self._get_reauth_entry()
         defaults = dict(entry.data) if user_input is None else user_input
         _LOGGER.debug(
-            "[AUTH-DEBUG] Showing reauth form with defaults (api_key: %s)",
+            "Showing reauth form with defaults (api_key: %s)",
             _mask_token(defaults.get("api_key")),
         )
         return await self._show_config_form(defaults, "reauth_validate")

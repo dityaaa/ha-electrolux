@@ -207,6 +207,38 @@ class TestCatalogPurifier:
         assert "Muju" in catalog
 
 
+class TestCatalogRobotVacuum:
+    """Tests for robot vacuum catalog support."""
+
+    def test_catalog_robot_vacuum_loads(self):
+        """Robot vacuum catalog loads without error."""
+        from custom_components.electrolux.catalogs.catalog_rvc import CATALOG_RVC
+
+        assert isinstance(CATALOG_RVC, dict)
+        assert len(CATALOG_RVC) > 0
+
+    def test_cybele_appliance_type_maps_to_rvc_catalog(self):
+        """Cybele appliance type should use the robot vacuum catalog."""
+        from custom_components.electrolux.catalog_core import CATALOG_BY_TYPE
+
+        catalog = CATALOG_BY_TYPE()
+        assert "Cybele" in catalog
+        assert "vacuumMode" in catalog["Cybele"]
+        assert "chargingStatus" in catalog["Cybele"]
+        assert "mopInstalled" in catalog["Cybele"]
+        assert "waterPumpRate" in catalog["Cybele"]
+        assert "autoDustCollection" in catalog["Cybele"]
+
+    def test_vacuum_mode_supports_cybele_values(self):
+        """Robot vacuum catalog supports Cybele vacuumMode values."""
+        from custom_components.electrolux.catalogs.catalog_rvc import CATALOG_RVC
+
+        values = CATALOG_RVC["vacuumMode"].capability_info["values"]
+        assert "max" in values
+        assert "energySaving" in values
+        assert "quiet" in values
+
+
 class TestCatalogDishwasher:
     """Tests for catalog_dw.py."""
 

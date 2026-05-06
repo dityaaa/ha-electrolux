@@ -31,18 +31,23 @@ async def async_setup_entry(
     if appliances := coordinator.data.get("appliances", None):
         entities = []
         for appliance_id, appliance in appliances.appliances.items():
-            # Create climate entities for air conditioners
-            if appliance.appliance_type == "AC":
-                # Extract relevant capabilities for climate entity
+            if appliance.appliance_type in (
+                "AC",
+                "CA",
+                "Azul",
+                "Panther",
+                "Bogong",
+                "Telica",
+            ):
                 capabilities_dict = {}
                 if appliance.data and hasattr(appliance.data, "capabilities"):
                     all_caps = appliance.data.capabilities or {}
-                    # Extract climate-relevant capabilities
                     climate_attrs = [
                         "mode",
                         "fanSpeedSetting",
                         "fanMode",
                         "verticalSwing",
+                        "horizontalSwing",
                         "swingMode",
                         "targetTemperatureC",
                         "targetTemperatureF",
@@ -149,14 +154,35 @@ class ElectroluxClimate(ElectroluxEntity, ClimateEntity):
 
     @property
     def supported_features(self) -> ClimateEntityFeature:
-        """Return the list of supported features."""
-        # For air conditioners, assume these features are supported
-        # In a real implementation, this could check the appliance capabilities
-        return (
+        features = (
             ClimateEntityFeature.TARGET_TEMPERATURE
             | ClimateEntityFeature.FAN_MODE
             | ClimateEntityFeature.SWING_MODE
         )
+        if "horizontalSwing" in self.capability:
+            features |= ClimateEntityFeature.SWING_HORIZONTAL_MODE
+        return features
+
+    @property
+    def swing_horizontal_mode(self) -> str | None:
+        """Return the horizontal swing setting."""
+        value = self.get_state_attr("horizontalSwing")
+        if value:
+            return str(value).lower()
+        return None
+
+    @property
+    def swing_horizontal_modes(self) -> list[str] | None:
+        """Return the list of available horizontal swing modes."""
+        swing_capability = self.capability.get("horizontalSwing", {})
+        values = swing_capability.get("values", {})
+        if values:
+            return [str(mode).lower() for mode in values.keys()]
+        return None
+
+    async def async_set_swing_horizontal_mode(self, swing_mode: str) -> None:
+        """Set new target horizontal swing mode."""
+        await self._send_command("horizontalSwing", swing_mode.upper())
 
     @property
     def temperature_unit(self) -> str:
@@ -197,13 +223,10 @@ class ElectroluxClimate(ElectroluxEntity, ClimateEntity):
 
     @property
     def hvac_mode(self) -> HVACMode:
-        """Return current operation mode."""
-        # Check appliance state first
         state_value = self.get_state_attr("applianceState")
-        if state_value == "OFF":
+        if state_value is not None and str(state_value).upper() == "OFF":
             return HVACMode.OFF
 
-        # Check mode
         mode_value = self.get_state_attr("mode")
         if mode_value:
             mode_mapping = {
@@ -214,7 +237,6 @@ class ElectroluxClimate(ElectroluxEntity, ClimateEntity):
                 "FANONLY": HVACMode.FAN_ONLY,
             }
             return mode_mapping.get(str(mode_value).upper(), HVACMode.AUTO)
-
         return HVACMode.AUTO
 
     @property

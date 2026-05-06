@@ -211,4 +211,6 @@ AlertType = Literal[
 
 CapabilityType = Literal["string", "number", "boolean", "alert", "temperature"]
 AccessType = Literal["read", "readwrite", "write", "constant"]
-ApplianceType = Literal["OV", "CR", "WM", "WD", "AC", "DW"]
+ApplianceType = Literal[
+    "OV", "CR", "WM", "WD", "AC", "DW", "Cybele", "Gordias", "PUREi9", "700series"
+]

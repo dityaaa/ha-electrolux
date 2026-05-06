@@ -148,7 +148,7 @@ class ElectroluxSwitch(ElectroluxEntity, SwitchEntity):
             coordinator: ElectroluxCoordinator = self.coordinator  # type: ignore[assignment]
             await coordinator.handle_authentication_error(auth_ex)
             raise
-        except Exception:
+        except Exception:  # noqa: BLE001
             # Re-raise any errors from execute_command_with_error_handling
             raise
 

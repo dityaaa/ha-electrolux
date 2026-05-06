@@ -67,12 +67,12 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
     _LOGGER.info(
-        f"[AUTH-DEBUG] Setting up integration entry {entry.entry_id} (title: {entry.title})"
+        f"Setting up integration entry {entry.entry_id} (title: {entry.title})"
     )
     _validate_config(entry)
 
     # Always create new coordinator for clean, predictable behavior
-    _LOGGER.debug("[AUTH-DEBUG] Creating coordinator instance")
+    _LOGGER.debug("Creating coordinator instance")
     renew_interval = DEFAULT_WEBSOCKET_RENEWAL_DELAY
 
     api_key = entry.data.get(CONF_API_KEY) or ""
@@ -81,7 +81,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     token_expires_at = entry.data.get(CONF_TOKEN_EXPIRES_AT)
 
     _LOGGER.info(
-        "[AUTH-DEBUG] Config entry credentials loaded: api_key=%s, access_token=%s, refresh_token=%s",
+        "Config entry credentials loaded: api_key=%s, access_token=%s, refresh_token=%s",
         _mask_token(api_key),
         _mask_token(access_token),
         _mask_token(refresh_token),
@@ -90,14 +90,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         expiry_time = datetime.datetime.fromtimestamp(token_expires_at)
         time_until_expiry = token_expires_at - time.time()
         _LOGGER.info(
-            f"[AUTH-DEBUG] Stored token expiry: {expiry_time.isoformat()} ({time_until_expiry / 3600:.1f} hours from now)"
+            f"Stored token expiry: {expiry_time.isoformat()} ({time_until_expiry / 3600:.1f} hours from now)"
         )
     else:
-        _LOGGER.warning("[AUTH-DEBUG] No token expiry stored in config entry")
+        _LOGGER.warning("No token expiry stored in config entry")
 
-    _LOGGER.debug("[AUTH-DEBUG] Creating API client session")
+    _LOGGER.debug("Creating API client session")
     client = get_electrolux_session(api_key, access_token, refresh_token, hass, entry)
-    _LOGGER.debug("[AUTH-DEBUG] API client created successfully")
+    _LOGGER.debug("API client created successfully")
 
     coordinator = ElectroluxCoordinator(
         hass,
@@ -109,28 +109,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator.config_entry = entry
 
     # Set up token refresh callback to persist new tokens
-    _LOGGER.debug("[AUTH-DEBUG] Setting up token refresh callback")
+    _LOGGER.debug("Setting up token refresh callback")
     coordinator.setup_token_refresh_callback()
-    _LOGGER.debug("[AUTH-DEBUG] Token refresh callback setup completed")
+    _LOGGER.debug("Token refresh callback setup completed")
 
     # Note: SDK's internal token refresh loop is disabled via API call serialization
     # to prevent race conditions that cause "Invalid grant" errors
 
     # Authenticate
-    _LOGGER.debug("[AUTH-DEBUG] Starting authentication test")
+    _LOGGER.debug("Starting authentication test")
     try:
         result = await coordinator.async_login()
         if not result:
-            _LOGGER.error(
-                "[AUTH-DEBUG] Authentication returned False - likely network issue"
-            )
+            _LOGGER.error("Authentication returned False - likely network issue")
             raise ConfigEntryNotReady("Authentication failed - retrying")
     except ConfigEntryAuthFailed as ex:
         # Don't create repair issue here - let token manager handle it
         # Token manager distinguishes between temporary (expired token) and permanent (invalid credentials)
         # and will create repair only for permanent errors after retry attempts
         _LOGGER.warning(
-            "[AUTH-DEBUG] Authentication failed, converting to ConfigEntryNotReady to allow token manager retry: %s",
+            "Authentication failed, converting to ConfigEntryNotReady to allow token manager retry: %s",
             ex,
         )
         # Convert to ConfigEntryNotReady so HA retries setup
@@ -141,17 +139,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except ConfigEntryNotReady:
         # Network errors - let HA retry
         _LOGGER.error(
-            "[AUTH-DEBUG] Network error during authentication - will retry on next HA restart"
+            "Network error during authentication - will retry on next HA restart"
         )
         raise
 
-    _LOGGER.debug("[INIT] Electrolux authentication completed successfully")
+    _LOGGER.debug("Electrolux authentication completed successfully")
 
     # Store coordinator
     entry.runtime_data = coordinator
 
     # Initialize entities
-    _LOGGER.debug("[INIT] async_setup_entry setup_entities")
+    _LOGGER.debug("Setting up entities")
     await coordinator.setup_entities()
     appliances_count = (
         len(coordinator.data.get("appliances", {})) if coordinator.data else 0
@@ -161,13 +159,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         appliances_count,
     )
 
-    _LOGGER.debug("[INIT] async_setup_entry async_config_entry_first_refresh")
+    _LOGGER.debug("Running initial data refresh")
     try:
         await asyncio.wait_for(
             coordinator.async_config_entry_first_refresh(),
             timeout=FIRST_REFRESH_TIMEOUT,
         )
-        _LOGGER.info("[INIT] First data refresh completed successfully")
+        _LOGGER.info("First data refresh completed successfully")
     except (asyncio.TimeoutError, Exception) as err:
         # Handle both timeouts and other exceptions gracefully
         _LOGGER.warning(
@@ -182,7 +180,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
         raise ConfigEntryNotReady
 
-    _LOGGER.debug("[INIT] async_setup_entry extend PLATFORMS")
+    _LOGGER.debug("Extending platforms")
     coordinator.platforms.extend(PLATFORMS)
     _LOGGER.debug(
         "async_setup_entry platforms extended - total platforms: %d",
@@ -190,20 +188,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     # Call async_setup_entry in entity files
-    _LOGGER.debug("[INIT] async_setup_entry async_forward_entry_setups")
+    _LOGGER.debug("Forwarding entry setup to platforms")
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     _LOGGER.debug(
         "async_setup_entry async_forward_entry_setups completed - platforms forwarded"
     )
 
-    _LOGGER.debug("[INIT] async_setup_entry scheduling websocket renewal task")
+    _LOGGER.debug("Scheduling websocket renewal task")
 
     # Schedule websocket tasks as background tasks after HA startup completes to avoid blocking
     # Use proper HA pattern: per-entry task with automatic cleanup via async_on_unload
     async def start_background_tasks(event=None):
-        _LOGGER.debug(
-            "[INIT] async_setup_entry background tasks starting after HA startup"
-        )
+        _LOGGER.debug("Background tasks starting after HA startup")
         try:
             # Start websocket listening
             coordinator.listen_task = hass.async_create_task(
@@ -232,13 +228,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 )
                 if coordinator.listen_task:
                     coordinator.listen_task.cancel()
-                    _LOGGER.debug("[INIT] async_setup_entry listen task cancelled")
+                    _LOGGER.debug("Websocket listen task cancelled")
                 if coordinator.renew_task:
                     coordinator.renew_task.cancel()
-                    _LOGGER.debug("[INIT] async_setup_entry renewal task cancelled")
+                    _LOGGER.debug("Websocket renewal task cancelled")
 
             entry.async_on_unload(cleanup_tasks)
-            _LOGGER.debug("[INIT] async_setup_entry cleanup handlers registered")
+            _LOGGER.debug("Cleanup handlers registered")
 
         except Exception as ex:
             _LOGGER.error("async_setup_entry failed to start background tasks: %s", ex)
@@ -274,9 +270,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.debug("async_setup_entry shutdown cleanup listener registered")
 
     entry.async_on_unload(entry.add_update_listener(update_listener))
-    _LOGGER.debug("[INIT] async_setup_entry update listener registered")
+    _LOGGER.debug("Update listener registered")
 
-    _LOGGER.info(f"[INIT] Electrolux integration setup completed for '{entry.title}'")
+    _LOGGER.info(f"Electrolux integration setup completed for '{entry.title}'")
     return True
 
 
