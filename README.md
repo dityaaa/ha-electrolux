@@ -5,7 +5,7 @@
   <a href="https://raw.githubusercontent.com/TTLucian/ha-solar-ac-controller/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" /></a>
   <img src="https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge" />
   <a href="https://github.com/TTLucian/ha-electrolux/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/TTLucian/ha-electrolux/ci.yml?style=for-the-badge" /></a>
-  <a href="#status-update"><img src="https://shields.io" /></a>
+  <a href="https://github.com/TTLucian/ha-electrolux#%E2%80%8D-status-update"><img src="https://img.shields.io/badge/Development-Slowed-yellow?style=for-the-badge" /></a>
 </p>
 
 <p align="center">
@@ -734,6 +734,8 @@ This repository includes comprehensive testing scripts to help you verify applia
 📖 **[Testing Scripts Documentation](scripts/TESTING_SCRIPTS_README.md)** - Complete guide for using the testing tools
 
 ## 🤝 Contributing
+
+[joeblack2k](https://github.com/joeblack2k)
 
 Contributions are welcome! This integration is actively maintained and improved.
 
