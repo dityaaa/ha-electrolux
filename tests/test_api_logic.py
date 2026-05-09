@@ -662,6 +662,23 @@ class TestApiPreciseCoverage:
         result = entity.get_entity_type("targetTemp")
         assert result == NUMBER
 
+    # temperature readwrite with discrete values (no min/max) → SELECT
+    def test_get_entity_type_temperature_discrete_values_returns_select(self):
+        """L254-259: temperature + readwrite + discrete values (no min/max) → SELECT platform."""
+        from custom_components.electrolux.const import Platform
+
+        entity = self._entity(
+            {
+                "targetTemperatureC": {
+                    "type": "temperature",
+                    "access": "readwrite",
+                    "values": {"-2.0": {}, "0.0": {}, "3.0": {}, "7.0": {}},
+                }
+            }
+        )
+        result = entity.get_entity_type("targetTemperatureC")
+        assert result == Platform.SELECT
+
     # L277: get_entity_type for executeCommand + read → BUTTON
     def test_get_entity_type_execute_command_read_returns_button(self):
         """L277: attr_name='executeCommand' + access='read' → BUTTON."""

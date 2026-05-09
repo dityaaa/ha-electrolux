@@ -50,6 +50,16 @@ def deep_merge_dicts(dict1: dict[str, Any], dict2: dict[str, Any]) -> dict[str, 
     return result
 
 
+def _filter_numeric_sentinel_values(values: dict[str, Any]) -> dict[str, Any]:
+    """Remove purely numeric sentinel keys (e.g. '0', '-1') from a capability values dict.
+
+    Some Electrolux appliances emit numeric keys as API no-op defaults that have
+    no meaningful option to show in a selector.  Strip them so they don't appear
+    as extra choices in a SELECT entity.
+    """
+    return {k: v for k, v in values.items() if not str(k).lstrip("-").isdigit()}
+
+
 class ElectroluxLibraryEntity:
     """Electrolux Library Entity."""
 
@@ -240,23 +250,40 @@ class ElectroluxLibraryEntity:
         ):
             return SWITCH
 
-        # List of values ? if values is defined and has at least 1 entry
-        values: dict[str, Any] | None = capability_def.get("values", None)
-        if (
-            values
-            and access == "readwrite"
-            and isinstance(values, dict)
-            and len(values) > 0
-        ):
-            if type_object == "string":
-                upper_values = {str(k).upper() for k in values}
-                if upper_values == {"ON", "OFF"}:
-                    return SWITCH
-            if type_object not in ["number", "temperature"] or (
-                capability_def.get("min", None) is None
-                and capability_def.get("range", None) is None
-            ):
-                return Platform.SELECT
+        # List of values? if values is defined and has at least 1 entry.
+        # Strip numeric sentinel keys (e.g. "0") the API emits as no-op defaults
+        # before any logic that depends on the value set.
+        raw_values: dict[str, Any] | None = capability_def.get("values", None)
+        values: dict[str, Any] | None = (
+            _filter_numeric_sentinel_values(raw_values)
+            if isinstance(raw_values, dict)
+            else raw_values
+        )
+
+        if values and isinstance(values, dict) and len(values) > 0:
+            upper_values = {str(k).upper() for k in values}
+
+            # Write-only ON/OFF pair (e.g. ice maker control) → single optimistic SWITCH
+            # instead of two separate BUTTON entities.
+            if upper_values >= {"ON", "OFF"} and access == "write":
+                return SWITCH
+
+            if access == "readwrite":
+                if type_object == "string":
+                    if upper_values == {"ON", "OFF"}:
+                        return SWITCH
+                # For discrete values, check if it has a continuous range (min/max/range)
+                # If no continuous range constraints, use SELECT; otherwise use NUMBER
+                has_continuous_range = (
+                    capability_def.get("min") is not None
+                    or capability_def.get("max") is not None
+                    or capability_def.get("range") is not None
+                )
+                if (
+                    type_object not in ["number", "temperature"]
+                    or not has_continuous_range
+                ):
+                    return Platform.SELECT
 
         match type_object:
             case "boolean":

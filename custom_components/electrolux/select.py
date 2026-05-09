@@ -11,6 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .api import _filter_numeric_sentinel_values
 from .const import DOMAIN, SELECT
 from .coordinator import ElectroluxCoordinator
 from .entity import ElectroluxEntity
@@ -84,7 +85,14 @@ class ElectroluxSelect(ElectroluxEntity, SelectEntity):
             icon=icon,
             catalog_entry=catalog_entry,
         )
-        values_dict: dict[str, Any] | None = self.capability.get("values", None)
+        raw_values: dict[str, Any] | None = self.capability.get("values", None)
+        # Strip numeric sentinel keys (e.g. "0") that the Electrolux API emits as
+        # no-op defaults — they must not appear as selectable options in the UI.
+        values_dict: dict[str, Any] | None = (
+            _filter_numeric_sentinel_values(raw_values)
+            if isinstance(raw_values, dict)
+            else raw_values
+        )
         self.options_list: dict[str, str] = {}
         if values_dict:
             for value in values_dict:
@@ -159,11 +167,21 @@ class ElectroluxSelect(ElectroluxEntity, SelectEntity):
                 self.options_list.values(),
                 ex,
             )
-        # When value not in the catalog -> add the value to the list then
+        # When value not in the catalog → add the value to the list dynamically.
+        # Guard: skip numeric sentinel values (e.g. "0") that the appliance may
+        # report as a transient/default state — they should never become options.
         if label is None:
-            label = self.format_label(value)
-            if label is not None and value is not None:
-                self.options_list[label] = str(value)
+            str_value = str(value) if value is not None else ""
+            if str_value and not str_value.lstrip("-").isdigit():
+                label = self.format_label(value)
+                if label is not None and value is not None:
+                    self.options_list[label] = str_value
+            else:
+                _LOGGER.debug(
+                    "Electrolux skipping numeric sentinel value %r for %s",
+                    value,
+                    self.entity_attr,
+                )
 
         return str(label or "")
 

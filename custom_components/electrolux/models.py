@@ -418,6 +418,23 @@ class Appliance:
         if catalog_item and isinstance(catalog_item.entity_platform, Platform):
             entity_type = catalog_item.entity_platform
 
+        # EntityCategory.CONFIG is only valid for actionable platforms (select, number,
+        # switch, text, etc.). HA refuses to register SENSOR or BINARY_SENSOR entities
+        # with CONFIG and raises an error, leaving them in an unavailable/restored state.
+        # Downgrade CONFIG → DIAGNOSTIC for read-only platforms so catalog authors don't
+        # have to individually audit every read-only entry they mark as CONFIG.
+        if entity_category == EntityCategory.CONFIG and entity_type in (
+            SENSOR,
+            BINARY_SENSOR,
+        ):
+            _LOGGER.debug(
+                "Electrolux: downgrading entity_category CONFIG → DIAGNOSTIC for "
+                "%s (platform %s does not support CONFIG)",
+                capability,
+                entity_type,
+            )
+            entity_category = EntityCategory.DIAGNOSTIC
+
         _LOGGER.debug(
             "Electrolux get_entity. entity_type: %s entity_name: %s entity_attr: %s entity_source: %s capability: %s device_class: %s unit: %s, catalog: %s",
             entity_type,
