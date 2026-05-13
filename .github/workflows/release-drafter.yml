@@ -69,8 +69,10 @@ jobs:
             gh release edit "v${VERSION}" \
               --draft \
               --title "$TITLE" \
-              --notes-file "release_notes/RELEASE_NOTES_v${VERSION}.md" \
-              --attach dist/electrolux.zip
+              --notes-file "release_notes/RELEASE_NOTES_v${VERSION}.md"
+            # Replace asset: delete old one if present, then upload fresh
+            gh release delete-asset "v${VERSION}" electrolux.zip --yes 2>/dev/null || true
+            gh release upload "v${VERSION}" dist/electrolux.zip
           else
             echo "Creating new draft release v${VERSION}"
             gh release create "v${VERSION}" \
