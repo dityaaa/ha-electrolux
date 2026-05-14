@@ -5,6 +5,6 @@ __pycache__/
 .github/**/*instruction*
 *samples*
 *pyrightconfig*
-*log.log*
+*.log
 *diag-sample.json*
 *translate.py*
