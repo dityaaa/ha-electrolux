@@ -28,6 +28,16 @@
 - Run `ruff check custom_components/electrolux` and `black custom_components/electrolux` before pushing
 - CI will fail on lint/format errors
 
+## Pre-commit (optional)
+
+A `.pre-commit-config.yaml` is included that mirrors CI checks (ruff, black, mypy on commit; pytest on push).
+
+```bash
+pip install pre-commit && pre-commit install
+```
+
+Not required — CI catches the same issues — but useful for fast local feedback.
+
 ## Files to never commit
 
 - `*.log`

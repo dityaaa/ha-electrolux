@@ -745,7 +745,13 @@ Contributions are welcome! This integration is actively maintained and improved.
 1. Fork the repository
 2. Clone your fork
 3. Install development dependencies: `pip install -r requirements-dev.txt`
-4. Test scripts are available in the root directory for API testing
+4. Install test dependencies: `pip install -r requirements_test.txt`
+5. Test scripts are available in the `scripts/` directory for API testing
+
+**Optional:** Install pre-commit hooks to run the same checks as CI (ruff, black, mypy, pytest) automatically before each commit/push:
+```bash
+pip install pre-commit && pre-commit install
+```
 
 ### 🧪 Testing Your Appliances
 Use the provided test scripts to verify API connectivity:
