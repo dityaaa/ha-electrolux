@@ -43,12 +43,13 @@ jobs:
           fi
 
       - name: Create electrolux.zip asset
+        if: github.event_name == 'push'
         run: |
           mkdir -p dist
           zip -r dist/electrolux.zip custom_components
 
       - name: Create or Update Release with Release Notes
-        if: steps.release_notes.outputs.found == 'true'
+        if: steps.release_notes.outputs.found == 'true' && github.event_name == 'push'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.get_version.outputs.version }}
@@ -83,6 +84,6 @@ jobs:
           fi
 
       - name: Skip Release Creation
-        if: steps.release_notes.outputs.found == 'false'
+        if: steps.release_notes.outputs.found == 'false' && github.event_name == 'push'
         run: |
           echo "No release notes file found for version ${{ steps.get_version.outputs.version }}. Skipping release creation."
