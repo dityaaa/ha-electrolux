@@ -532,6 +532,38 @@ class TestProcessIncrementalUpdate:
 
         ap.update_reported_data.assert_not_called()
 
+    def test_duplicate_log_redacts_user_id(self, coordinator, caplog):
+        """Duplicate-SSE debug log must redact userId, matching the 'received' path."""
+        import logging
+
+        ap = _make_appliance("app1")
+        ap.reported_state = {"opMode": "auto"}  # same as incoming → duplicate path
+        aps = _make_appliances({"app1": ap})
+        coordinator.async_set_updated_data = MagicMock()
+
+        secret_user_id = "deadbeefcafebabe1234567890abcdef"
+        data = {
+            APPLIANCE_ID_KEY: "app1",
+            PROPERTY_KEY: "opMode",
+            VALUE_KEY: "auto",
+            "userId": secret_user_id,
+        }
+
+        with caplog.at_level(
+            logging.DEBUG, logger="custom_components.electrolux"
+        ):
+            coordinator._process_incremental_update(data, aps)
+
+        duplicate_logs = [
+            r.getMessage() for r in caplog.records if "duplicate" in r.getMessage()
+        ]
+        assert duplicate_logs, "expected duplicate-SSE debug log line"
+        for msg in duplicate_logs:
+            assert secret_user_id not in msg, (
+                f"userId leaked in duplicate log: {msg}"
+            )
+            assert "REDACTED" in msg
+
     def test_updates_nested_path_correctly(self, coordinator):
         """SSE property 'upperOven/runningTime' must be passed as {"property": ..., "value": ...}
         so update_reported_data writes it nested, not as a flat key with a slash."""

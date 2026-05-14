@@ -500,7 +500,14 @@ class ElectroluxCoordinator(DataUpdateCoordinator):
 
         if not value_changed:
             _LOGGER.debug(
-                f"SSE duplicate (unchanged) for {appliance_id}: {json.dumps(data)}"
+                "SSE duplicate (unchanged) for %s: %s",
+                appliance_id,
+                json.dumps(
+                    {
+                        k: ("REDACTED" if k == USER_ID_KEY else v)
+                        for k, v in data.items()
+                    }
+                ),
             )
             # Still update last seen time even if value unchanged (keeps appliance alive)
             self._last_update_times[appliance_id] = self.hass.loop.time()
