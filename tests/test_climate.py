@@ -485,6 +485,43 @@ class TestElectroluxClimate:
         assert calls[1][0] == ("mode", "FANONLY")
 
     @pytest.mark.asyncio
+    async def test_async_set_temperature_caches_last_value(self, climate_entity):
+        """Temperature is cached so it can be re-applied on next power-on."""
+        climate_entity._send_command = AsyncMock()
+
+        await climate_entity.async_set_temperature(temperature=22.0)
+
+        assert climate_entity._last_user_temperature == 22.0
+
+    @pytest.mark.asyncio
+    async def test_hvac_mode_on_resends_last_temperature(self, climate_entity):
+        """Turning on re-sends last user temperature to counter device reset to min."""
+        climate_entity._send_command = AsyncMock()
+        climate_entity._apply_optimistic_update = MagicMock()
+        climate_entity._last_user_temperature = 22.0
+
+        await climate_entity.async_set_hvac_mode(HVACMode.HEAT)
+
+        assert climate_entity._send_command.call_count == 3
+        calls = climate_entity._send_command.call_args_list
+        assert calls[0][0] == ("executeCommand", "ON")
+        assert calls[1][0] == ("mode", "HEAT")
+        assert calls[2][0] == ("targetTemperatureC", 22.0)
+
+    @pytest.mark.asyncio
+    async def test_hvac_mode_on_no_cached_temp_skips_resend(self, climate_entity):
+        """No cached temperature → no extra temperature command on turn-on."""
+        climate_entity._send_command = AsyncMock()
+        climate_entity._last_user_temperature = None
+
+        await climate_entity.async_set_hvac_mode(HVACMode.COOL)
+
+        assert climate_entity._send_command.call_count == 2
+        calls = climate_entity._send_command.call_args_list
+        assert calls[0][0] == ("executeCommand", "ON")
+        assert calls[1][0] == ("mode", "COOL")
+
+    @pytest.mark.asyncio
     async def test_async_set_fan_mode(self, climate_entity):
         """Test setting fan mode."""
         climate_entity._send_command = AsyncMock()

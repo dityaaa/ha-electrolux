@@ -121,6 +121,7 @@ class ElectroluxClimate(ElectroluxEntity, ClimateEntity):
             catalog_entry=catalog_entry,
         )
         self._enable_turn_on_off_backwards_compatibility = False
+        self._last_user_temperature: float | None = None
 
         # Determine temperature unit once from capabilities (static — never changes at runtime).
         # Prefer Celsius; fall back to Fahrenheit if only F is in capabilities.
@@ -364,6 +365,7 @@ class ElectroluxClimate(ElectroluxEntity, ClimateEntity):
         if temperature is None:
             return
 
+        self._last_user_temperature = float(temperature)
         await self._send_command(f"targetTemperature{self._temp_suffix}", temperature)
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
@@ -390,6 +392,12 @@ class ElectroluxClimate(ElectroluxEntity, ClimateEntity):
             mode_str = mode_mapping[hvac_mode]
             await self._send_command("mode", mode_str)
             self._apply_optimistic_update("mode", mode_str)
+
+        # Re-apply last user temperature — device resets to min on power-off.
+        if self._last_user_temperature is not None:
+            temp_attr = f"targetTemperature{self._temp_suffix}"
+            await self._send_command(temp_attr, self._last_user_temperature)
+            self._apply_optimistic_update(temp_attr, self._last_user_temperature)
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         """Set new target fan mode."""
