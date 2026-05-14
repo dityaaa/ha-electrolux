@@ -1116,15 +1116,21 @@ class TestMapCommandError:
         )
 
         class _Ex(Exception):
-            pass
+            def __init__(self, *args, status=None, **kwargs):
+                super().__init__(*args)
+                self.status = status
 
-        ex = _Ex(f"{status}, message=\"{{'error': 'INTERNAL_SERVER_ERROR'}}\"")
-        ex.status = status
-        result = map_command_error_to_home_assistant_error(
-            ex, "attr", self._logger()
+        ex = _Ex(
+            f"{status}, message=\"{{'error': 'INTERNAL_SERVER_ERROR'}}\"",
+            status=status,
         )
+        result = map_command_error_to_home_assistant_error(ex, "attr", self._logger())
+
         assert "temporarily unavailable" in str(result).lower()
-        assert getattr(result, "translation_key", None) == "service_temporarily_unavailable"
+        assert (
+            getattr(result, "translation_key", None)
+            == "service_temporarily_unavailable"
+        )
         assert getattr(result, "translation_domain", None) == DOMAIN
 
     @pytest.mark.parametrize("status", [500, 502, 504])
@@ -1137,10 +1143,12 @@ class TestMapCommandError:
         logger = self._logger()
 
         class _Ex(Exception):
-            pass
+            def __init__(self, *args, status=None, **kwargs):
+                super().__init__(*args)
+                self.status = status
 
-        ex = _Ex(f"{status} server error")
-        ex.status = status
+        ex = _Ex(f"{status} server error", status=status)
+
         map_command_error_to_home_assistant_error(ex, "attr", logger)
 
         logger.warning.assert_called()
