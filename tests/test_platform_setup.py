@@ -160,13 +160,19 @@ class TestSwitchPlatformSetup:
         self, mock_hass, mock_config_entry, mock_coordinator
     ):
         """Test successful switch platform setup."""
+        from custom_components.electrolux.const import SWITCH  # Use internal constant
         from custom_components.electrolux.switch import async_setup_entry
 
         mock_entity = MagicMock()
-        mock_entity.entity_type = Platform.SWITCH
-        mock_coordinator.data["appliances"].appliances[
-            "test_appliance_123"
-        ].entities = [mock_entity]
+        mock_entity.entity_type = SWITCH  # Match the exact constant used in switch.py
+
+        mock_appliance = MagicMock()
+        mock_appliance.entities = [mock_entity]
+
+        # Convert appliances to a real dictionary so .items() works properly
+        mock_coordinator.data["appliances"].appliances = {
+            "test_appliance_123": mock_appliance
+        }
 
         mock_config_entry.runtime_data = mock_coordinator
         mock_add_entities = MagicMock()
