@@ -169,15 +169,22 @@ class TestSwitchPlatformSetup:
         mock_entity = MagicMock()
         mock_entity.entity_type = SWITCH  # Match the exact constant used in switch.py
         mock_entity.entity_attr = test_attr
+        mock_entity.friendly_name = "Pre-Wash"
+        # Provide the write/readwrite capabilities required by the switch platform
+        mock_entity.capability_info = {"access": "readwrite", "type": "boolean"}
+        mock_entity.capability = {"access": "readwrite", "type": "boolean"}
 
         mock_appliance = MagicMock()
         mock_appliance.entities = [mock_entity]
 
         # 2. Provide a mock state showing that this appliance supports the feature
-        # This covers filtering by either raw capabilities or reported properties
+        # Map capabilities directly to the appliance object as well as the state dictionary
+        mock_appliance.capabilities = {
+            test_attr: {"access": "readwrite", "type": "boolean"}
+        }
         mock_appliance.state = {
             "properties": {"reported": {test_attr: True}},
-            "capabilities": {test_attr: True},
+            "capabilities": {test_attr: {"access": "readwrite", "type": "boolean"}},
         }
 
         # Convert appliances to a real dictionary so .items() works properly
