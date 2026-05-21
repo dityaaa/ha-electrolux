@@ -170,6 +170,9 @@ class TestSwitchPlatformSetup:
         mock_entity.entity_type = SWITCH  # Match the exact constant used in switch.py
         mock_entity.entity_attr = test_attr
         mock_entity.friendly_name = "Pre-Wash"
+        # json_path must be present in reported_state so the phantom-capability
+        # filter in switch.async_setup_entry does not skip this entity.
+        mock_entity.json_path = test_attr
         # Provide the write/readwrite capabilities required by the switch platform
         mock_entity.capability_info = {"access": "readwrite", "type": "boolean"}
         mock_entity.capability = {"access": "readwrite", "type": "boolean"}
@@ -182,6 +185,9 @@ class TestSwitchPlatformSetup:
         mock_appliance.capabilities = {
             test_attr: {"access": "readwrite", "type": "boolean"}
         }
+        # reported_state is consulted by switch.async_setup_entry to filter out
+        # phantom/ghost capabilities (Issue #55).
+        mock_appliance.reported_state = {test_attr: True}
         mock_appliance.state = {
             "properties": {"reported": {test_attr: True}},
             "capabilities": {test_attr: {"access": "readwrite", "type": "boolean"}},
