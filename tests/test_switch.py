@@ -510,10 +510,50 @@ class TestElectroluxSwitch:
         ):
             with pytest.raises(HomeAssistantError, match="remote control disabled"):
                 await entity.switch(True)
+# ... (existing tests in TestElectroluxSwitch class) ...
+
+    @pytest.mark.asyncio
+    async def test_switch_schedules_state_refresh_after_command(
+        self, mock_coordinator, mock_capability
+    ):
+        """State refresh is scheduled after a successful switch command."""
+        entity = ElectroluxSwitch(
+            coordinator=mock_coordinator,
+            capability=mock_capability,
+            name="Test Switch",
+            config_entry=mock_coordinator.config_entry,
+            pnc_id="TEST_PNC",
+            entity_type=SWITCH,
+            entity_name="test_switch",
+            entity_attr="testAttr",
+            entity_source=None,
+            unit=None,
+            device_class=None,
+            entity_category=None,
+            icon="mdi:test",
+        )
+        entity.hass = mock_coordinator.hass
+        entity.api = MagicMock()
+        entity.api.execute_appliance_command = AsyncMock(return_value=None)
+        mock_coordinator._schedule_state_refresh = MagicMock()
+
+        with (
+            patch(
+                "custom_components.electrolux.switch.execute_command_with_error_handling",
+                return_value=None,
+            ),
+            patch(
+                "custom_components.electrolux.switch.format_command_for_appliance",
+                return_value="ON",
+            ),
+        ):
+            await entity.switch(True)
+
+        mock_coordinator._schedule_state_refresh.assert_called_once_with("TEST_PNC")
 
 
 class TestElectroluxSwitchSetup:
-    """Test the switch platform dynamic dynamic setup and capability filtering."""
+    """Test the switch platform dynamic setup and capability filtering."""
 
     @pytest.mark.asyncio
     async def test_async_setup_entry_filters_phantom_entities(self):
@@ -533,30 +573,24 @@ class TestElectroluxSwitchSetup:
             "looseAttr": False,  # Supported loose attribute
         }
 
-        # Entity 1: Normal path, present in reported state -> load
+        # Entity definitions
         entity_valid_path = MagicMock()
         entity_valid_path.entity_type = SWITCH
         entity_valid_path.json_path = "userSelections/EWX1493A_preWashPhase"
         entity_valid_path.entity_attr = "EWX1493A_preWashPhase"
 
-        # Entity 2: Loose attribute, no JSON path, present -> load
         entity_valid_attr = MagicMock()
         entity_valid_attr.entity_type = SWITCH
         entity_valid_attr.json_path = None
         entity_valid_attr.entity_attr = "looseAttr"
 
-        # Entity 3: Phantom JSON path and attribute absent from reported state -> dropped
         entity_phantom = MagicMock()
         entity_phantom.entity_type = SWITCH
         entity_phantom.json_path = "userSelections/EWX1493A_pod"
         entity_phantom.entity_attr = "EWX1493A_pod"
 
-        mock_appliance.entities = [
-            entity_valid_path,
-            entity_valid_attr,
-            entity_phantom,
-        ]
-
+        mock_appliance.entities = [entity_valid_path, entity_valid_attr, entity_phantom]
+        
         appliances_container = MagicMock()
         appliances_container.appliances = {"appliance_1": mock_appliance}
         coordinator.data = {"appliances": appliances_container}
@@ -564,7 +598,7 @@ class TestElectroluxSwitchSetup:
         # Run setup entry execution loop
         await async_setup_entry(hass, entry, async_add_entities)
 
-        # Confirm only the 2 supported entities get registered to HA platform
+        # Confirm only the 2 supported entities get registered
         async_add_entities.assert_called_once()
         added_entities = async_add_entities.call_args[0][0]
         assert len(added_entities) == 2
