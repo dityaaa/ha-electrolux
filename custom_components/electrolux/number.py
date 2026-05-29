@@ -40,6 +40,13 @@ from .util import (
 _LOGGER: logging.Logger = logging.getLogger(__package__)
 PARALLEL_UPDATES = 0
 
+# AC target-temperature attributes that share the off-state HTTP 500 contract
+# with the climate entity — set-value while applianceState=Off is rejected by
+# the Electrolux cloud.
+_AC_TEMPERATURE_ATTRS: frozenset[str] = frozenset(
+    {"targetTemperatureC", "targetTemperatureF"}
+)
+
 
 def _get_capability_constraint(capability: dict, key: str) -> float | None:
     """Extract min/max/step from a capability dict, supporting standard and DAM range formats.
@@ -617,6 +624,24 @@ class ElectroluxNumber(ElectroluxEntity, NumberEntity):
             value,
             self.unit,
         )
+
+        # AC target temperature cannot be set while the appliance is off — the
+        # Electrolux API returns HTTP 500 in that case. Mirror the climate-entity
+        # guard for this code path so the number slider behaves consistently.
+        # Both ``applianceState`` and ``mode`` are inspected because the
+        # climate-entity OFF command optimistically writes ``mode=OFF`` before
+        # the ``applianceState=Off`` SSE event arrives.
+        if self.entity_attr in _AC_TEMPERATURE_ATTRS:
+            appliance_state = str(self.reported_state.get("applianceState") or "")
+            mode_value = str(self.reported_state.get("mode") or "")
+            if appliance_state.upper() == "OFF" or mode_value.upper() == "OFF":
+                raise HomeAssistantError(
+                    f"Cannot set '{self.entity_attr}' while appliance is off. "
+                    "Turn the appliance on first.",
+                    translation_domain=DOMAIN,
+                    translation_key="set_temperature_while_off",
+                    translation_placeholders={"attr": self.entity_attr},
+                )
 
         # Rate limit commands
         await self._rate_limit_command()
