@@ -826,32 +826,52 @@ class ElectroluxCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("No appliances to listen for, skipping SSE setup")
             return
 
-        # watch_for_appliance_state_updates in util.py handles kill-before-restart safely
+        # watch_for_appliance_state_updates in util.py handles kill-before-restart safely.
+        #
+        # The SDK's start_event_stream runs an indefinite loop that auto-reconnects
+        # internally on connection drops and fires its on-connect callbacks on EVERY
+        # successful (re)connect. SSE only delivers change events going forward — it
+        # never replays events missed during a disconnect — so we must refetch full
+        # state each time the stream (re)opens. We pass _on_sse_connected as that
+        # callback rather than refreshing once here (which would only cover the
+        # initial connect and miss every subsequent SDK-internal reconnect).
         try:
             await self.api.watch_for_appliance_state_updates(
                 ids,
                 self.incoming_data,
+                on_connected=self._on_sse_connected,
             )
             _LOGGER.debug(
                 f"Successfully started SSE listening for {len(ids)} appliances"
             )
 
-            # Trigger full state refresh after SSE (re)connects
-            # This ensures we catch any state changes that occurred during disconnection
-            _LOGGER.info(
-                "SSE connected - refreshing all appliance states to sync after reconnection"
-            )
-            try:
-                await self._refresh_all_appliances()
-            except Exception as ex:
-                _LOGGER.warning(
-                    f"Failed to refresh appliance states after SSE reconnection: {ex}"
-                )
-                # Don't raise - SSE is connected and working, refresh failure is not critical
-
         except Exception as ex:
             _LOGGER.error(f"Failed to start SSE listening: {ex}")
             raise
+
+    async def _on_sse_connected(self) -> None:
+        """Refetch all appliance state whenever the SSE stream (re)connects.
+
+        Fired by the SDK on the initial connection and on every internal
+        reconnect. Refetching here re-syncs any state transition that the
+        appliance went through while the stream was down (e.g. a wash cycle
+        finishing and returning to IDLE), which would otherwise be lost because
+        SSE does not replay missed events.
+
+        Guarded so a transient refresh failure never propagates back into the
+        SDK's stream loop (which would tear down the freshly-opened connection
+        and trigger another 10s reconnect cycle).
+        """
+        _LOGGER.info(
+            "SSE connected - refreshing all appliance states to sync after (re)connection"
+        )
+        try:
+            await self._refresh_all_appliances()
+        except Exception as ex:
+            _LOGGER.warning(
+                f"Failed to refresh appliance states after SSE (re)connection: {ex}"
+            )
+            # Don't raise - SSE is connected and working, refresh failure is not critical
 
     async def renew_websocket(self):
         """Renew SSE event stream."""
